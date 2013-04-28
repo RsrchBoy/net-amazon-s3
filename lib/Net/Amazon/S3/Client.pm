@@ -10,7 +10,15 @@ type 'Etag' => where { $_ =~ /^[a-z0-9]{32}$/ };
 
 type 'OwnerId' => where { $_ =~ /^[a-z0-9]{64}$/ };
 
-has 's3' => ( is => 'ro', isa => 'Net::Amazon::S3', required => 1 );
+has 's3' => (
+    is => 'ro',
+    isa => 'Net::Amazon::S3',
+    required => 1,
+    handles => [ qw{
+        request__list_all_my_buckets_class
+        client__bucket_class
+    } ],
+);
 
 __PACKAGE__->meta->make_immutable;
 
@@ -19,7 +27,7 @@ sub buckets {
     my $s3   = $self->s3;
 
     my $http_request
-        = Net::Amazon::S3::Request::ListAllMyBuckets->new( s3 => $s3 )
+        = $self->request__list_all_my_buckets_class->new( s3 => $s3 )
         ->http_request;
 
     my $xpc = $self->_send_request_xpc($http_request);
@@ -51,7 +59,7 @@ sub buckets {
 sub create_bucket {
     my ( $self, %conf ) = @_;
 
-    my $bucket = Net::Amazon::S3::Client::Bucket->new(
+    my $bucket = $self->client__bucket_class->new(
         client => $self,
         name   => $conf{name},
     );
@@ -64,7 +72,7 @@ sub create_bucket {
 
 sub bucket {
     my ( $self, %conf ) = @_;
-    return Net::Amazon::S3::Client::Bucket->new(
+    return $self->client__bucket_class->new(
         client => $self,
         %conf,
     );

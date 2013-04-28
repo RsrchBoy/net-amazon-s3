@@ -32,6 +32,9 @@ use MooseX::StrictConstructor 0.16;
   # or use an existing bucket
   $bucket = $s3->bucket($bucketname);
 
+
+
+
   # store a file in the bucket
   $bucket->add_key_filename( '1.JPG', 'DSC06256.JPG',
       { content_type => 'image/jpeg', },
@@ -106,29 +109,11 @@ Homepage for the project (just started) is at http://pfig.github.com/net-amazon-
 use Carp;
 use Digest::HMAC_SHA1;
 
-use Net::Amazon::S3::Bucket;
-use Net::Amazon::S3::Client;
-use Net::Amazon::S3::Client::Bucket;
-use Net::Amazon::S3::Client::Object;
-use Net::Amazon::S3::HTTPRequest;
-use Net::Amazon::S3::Request;
-use Net::Amazon::S3::Request::CompleteMultipartUpload;
-use Net::Amazon::S3::Request::CreateBucket;
-use Net::Amazon::S3::Request::DeleteBucket;
-use Net::Amazon::S3::Request::DeleteMultiObject;
-use Net::Amazon::S3::Request::DeleteObject;
-use Net::Amazon::S3::Request::GetBucketAccessControl;
-use Net::Amazon::S3::Request::GetBucketLocationConstraint;
-use Net::Amazon::S3::Request::GetObject;
-use Net::Amazon::S3::Request::GetObjectAccessControl;
-use Net::Amazon::S3::Request::InitiateMultipartUpload;
-use Net::Amazon::S3::Request::ListAllMyBuckets;
-use Net::Amazon::S3::Request::ListBucket;
-use Net::Amazon::S3::Request::ListParts;
-use Net::Amazon::S3::Request::PutObject;
-use Net::Amazon::S3::Request::PutPart;
-use Net::Amazon::S3::Request::SetBucketAccessControl;
-use Net::Amazon::S3::Request::SetObjectAccessControl;
+with 'MooseX::RelatedClasses' => {
+    -version         => 0.004,
+    all_in_namespace => 1,
+};
+
 use LWP::UserAgent::Determined;
 use URI::Escape qw(uri_escape_utf8);
 use XML::LibXML;
@@ -235,7 +220,7 @@ sub buckets {
     my $self = shift;
 
     my $http_request
-        = Net::Amazon::S3::Request::ListAllMyBuckets->new( s3 => $self )
+        = $self->request__list_all_my_buckets_class->new( s3 => $self )
         ->http_request;
 
     # die $request->http_request->as_string;
@@ -295,7 +280,7 @@ Returns 0 on failure, Net::Amazon::S3::Bucket object on success
 sub add_bucket {
     my ( $self, $conf ) = @_;
 
-    my $http_request = Net::Amazon::S3::Request::CreateBucket->new(
+    my $http_request = $self->request__create_bucket_class->new(
         s3                  => $self,
         bucket              => $conf->{bucket},
         acl_short           => $conf->{acl_short},
@@ -350,7 +335,7 @@ sub delete_bucket {
     }
     croak 'must specify bucket' unless $bucket;
 
-    my $http_request = Net::Amazon::S3::Request::DeleteBucket->new(
+    my $http_request = $self->request__delete_bucket_class->new(
         s3     => $self,
         bucket => $bucket,
     )->http_request;
@@ -497,7 +482,7 @@ Each key is a hashref that looks like this:
 sub list_bucket {
     my ( $self, $conf ) = @_;
 
-    my $http_request = Net::Amazon::S3::Request::ListBucket->new(
+    my $http_request = $self->request__list_bucket_class->new(
         s3        => $self,
         bucket    => $conf->{bucket},
         delimiter => $conf->{delimiter},
@@ -719,7 +704,7 @@ sub _send_request_expect_nothing {
 sub _send_request_expect_nothing_probed {
     my ( $self, $http_request ) = @_;
 
-    my $head = Net::Amazon::S3::HTTPRequest->new(
+    my $head = $self->h_t_t_p_request_class->new(
         s3     => $self,
         method => 'HEAD',
         path   => $http_request->uri->path,
